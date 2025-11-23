@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RMS Full System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #0f172a; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; width: 100%; margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); overflow: hidden; }
+        .hidden { display: none !important; }
+
+        /* LAYOUT */
+        #app-interface { display: flex; flex-direction: column; height: 100%; }
+        header { flex: 0 0 auto; background: white; padding: 15px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; z-index: 50; }
+        .brand { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
+        #main-container { flex: 1; overflow-y: auto; padding: 20px; width: 100%; max-width: 1200px; margin: 0 auto; padding-bottom: 140px; -webkit-overflow-scrolling: touch; }
+
+        /* ADMIN TABS */
+        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; border: none; background: white; border-radius: 8px; cursor: pointer; font-weight: 600; color: #64748b; border: 1px solid #cbd5e1; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* FORMS */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .form-input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; }
+        .btn-submit { width: 100%; padding: 10px; background: var(--success); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        /* CUSTOMER */
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .category-header { grid-column: 1/-1; font-size: 1.2rem; font-weight: 700; color: #475569; margin-top: 20px; border-bottom: 2px solid #e2e8f0; }
+        .menu-card { background: white; padding: 15px; border-radius: 16px; text-align: center; border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between; height: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .add-btn { background: var(--primary); color: white; border: none; padding: 8px; width: 100%; border-radius: 8px; cursor: pointer; margin-top: 10px; font-weight: 600; }
+
+        /* CART BAR */
+        .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #e2e8f0; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); z-index: 1000; }
+        .total-display { font-size: 0.85rem; color: var(--text-muted); }
+        .bill-val { font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+        .cart-val { font-size: 1rem; font-weight: 600; color: var(--primary); }
+        .btn-order { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .btn-pay { background: var(--success); color: white; border: none; padding: 10px 20px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-left: 10px; }
+
+        /* STAFF & KDS */
+        .floor-plan, .kds-grid, .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 20px; }
+        .table-node { aspect-ratio: 1; border-radius: 16px; background: white; border: 4px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); transition: 0.2s; }
+        .table-node:active { transform: scale(0.95); }
+        .table-node.Available { border-color: var(--success); background: #f0fdf4; color: var(--success); }
+        .table-node.Occupied { border-color: var(--danger); background: #fef2f2; color: var(--danger); }
+        .table-node.Cleaning { border-color: var(--warning); background: #fffbeb; color: var(--warning); }
+        
+        .ticket { background: white; width: 280px; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .btn-action { width: 100%; padding: 10px; border: none; font-weight: 600; cursor: pointer; color: white; border-radius: 6px; }
+        
+        .stat-card { background: white; padding: 25px; border-radius: 16px; border: 1px solid #e2e8f0; text-align:center; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; margin-bottom: 30px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        
+        .restock-input { width: 70px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+
+        /* LOGIN & MODALS */
+        #login-screen, .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 10000; display: flex; justify-content: center; align-items: center; }
+        #login-screen { background: #0f172a; }
+        .modal-bg { background: rgba(15,23,42,0.9); z-index: 5000; }
+        .login-box, .modal-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .btn-login { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h1 style="margin-top:0; color:#0f172a">RMS Login</h1>
+            <div id="auth-form">
+                <input type="text" id="username" placeholder="Username">
+                <input type="password" id="password" placeholder="Password">
+                <button class="btn-login" onclick="attemptLogin()">Staff Login</button>
+                <div style="color:red; margin-top:10px; display:none" id="login-error">Error</div>
+            </div>
+            <div style="margin:20px 0; border-top:1px solid #eee; position:relative"><span style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background:white; padding:0 10px; font-size:0.8rem">OR</span></div>
+            <button class="btn-login" style="background:#10b981" onclick="enterAsCustomer()">Customer Tablet</button>
+        </div>
+    </div>
+
+    <div id="app-interface" class="hidden">
+        <header>
+            <div class="brand" id="portal-title">RMS</div>
+            <button onclick="location.reload()" style="padding:5px 10px; border:1px solid #ccc; border-radius:5px; cursor:pointer">Exit</button>
+        </header>
+
+        <div id="main-container">
+            <div id="view-customer" class="hidden">
+                <div style="background:#e0f2fe; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center; color:#0369a1; font-weight:bold">Table <span id="my-table-display">?</span></div>
+                <div id="menu-grid" class="menu-grid"></div>
+                <div class="cart-bar">
+                    <div style="text-align:left">
+                        <div class="total-display">Total Bill: <span class="bill-val" id="bill-total">$0.00</span></div>
+                        <div style="font-size:0.8rem; color:#64748b">Cart: <span id="cart-total" style="font-weight:bold">$0.00</span></div>
+                    </div>
+                    <div>
+                        <button class="btn-order" onclick="submitOrder()">Order</button>
+                        <button class="btn-pay" onclick="openPayment()">Pay</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-kitchen" class="hidden"><h2>Kitchen Display</h2><div id="kds-container" class="kds-grid"></div></div>
+
+            <div id="view-staff" class="hidden">
+                <h2>Ready for Pickup</h2>
+                <div id="pickup-grid" class="kds-grid" style="margin-bottom:30px"></div>
+                <h2>Floor Plan</h2>
+                <div id="floor-grid" class="floor-plan"></div>
+            </div>
+
+            <div id="view-admin" class="hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h2>Admin Dashboard</h2>
+                    <button onclick="socket.emit('generate_report')" style="background:#334155; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer">Download Report</button>
+                </div>
+
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchAdminTab('dash')" id="tab-dash">Overview</button>
+                    <button class="tab-btn" onclick="switchAdminTab('menu')" id="tab-menu">Menu Manager</button>
+                </div>
+
+                <div id="admin-sub-dash">
+                    <div class="stats-grid">
+                        <div class="stat-card">Revenue<br><strong style="font-size:2rem; color:#10b981" id="kpi-revenue">$0</strong></div>
+                        <div class="stat-card">Orders<br><strong style="font-size:2rem; color:#2563eb" id="kpi-orders">0</strong></div>
+                    </div>
+                    <h3>Inventory</h3>
+                    <table id="inv-table"><thead><tr><th>Item</th><th>Stock</th><th>Action</th></tr></thead><tbody></tbody></table>
+                </div>
+
+                <div id="admin-sub-menu" class="hidden">
+                    <div style="background:white; padding:20px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:20px">
+                        <h3 style="margin-top:0">Add New Item</h3>
+                        <div class="form-grid">
+                            <input id="new-name" class="form-input" placeholder="Item Name (e.g. Burger)">
+                            <input id="new-price" class="form-input" type="number" placeholder="Price">
+                            <input id="new-cat" class="form-input" placeholder="Category (e.g. Main)">
+                            <input id="new-icon" class="form-input" placeholder="Icon (e.g. 🍔)">
+                            <input id="new-desc" class="form-input" placeholder="Description" style="grid-column:1/-1">
+                            <input id="new-allergy" class="form-input" placeholder="Allergens" style="grid-column:1/-1">
+                        </div>
+                        <button class="btn-submit" onclick="addMenuItem()">Add Item</button>
+                    </div>
+                    
+                    <h3>Current Menu List</h3>
+                    <table id="menu-mgmt-table">
+                        <thead><tr><th>Name</th><th>Price</th><th>Category</th><th>Action</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="payment-modal" class="modal-bg hidden">
+        <div class="modal-box">
+            <div id="pay-step-1">
+                <h2>Pay Bill</h2>
+                <p>Table <span id="pay-table-num"></span></p>
+                <h1 style="color:#2563eb" id="pay-amount">$0.00</h1>
+                <button class="btn-login" onclick="processPayment()">Confirm Payment</button>
+                <button style="background:none; border:none; color:#64748b; margin-top:15px; cursor:pointer" onclick="closePayment()">Cancel</button>
+            </div>
+            <div id="pay-step-2" class="hidden"><div class="spinner"></div><p style="margin-top:10px">Processing...</p></div>
+            <div id="pay-step-3" class="hidden"><h2 style="color:#10b981">Paid!</h2><p>Table marked for cleaning.</p></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let appData = { menu: [], tables: [], orders: [], inventory: [], revenue: 0, totalOrders: 0, tableBills: {} };
+        let cart = [];
+        let currentRole = '';
+        let myTableId = sessionStorage.getItem('rms_table') || 1;
+
+        socket.on('init_data', (data) => { appData = {...appData, ...data}; refreshUI(); });
+        socket.on('sync_state', (data) => { appData = {...appData, ...data}; refreshUI(); });
+        
+        socket.on('report_data', (data) => {
+            let csv = "ID,Table,Amount,Date\n" + data.map(r => `${r.id},${r.table_no},${r.total_amount},"${r.created_at}"`).join("\n");
+            const link = document.createElement("a");
+            link.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+            link.download = "sales_report.csv";
+            link.click();
+        });
+
+        /* AUTH */
+        socket.on('login_success', ({ role, name }) => { enterApp(role, name); });
+        function attemptLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if(u && p) socket.emit('login_attempt', { username: u, password: p });
+        }
+        function enterAsCustomer() {
+            let t = prompt("Table Number (1-6):", myTableId);
+            if(t) { 
+                myTableId = parseInt(t); 
+                sessionStorage.setItem('rms_table', myTableId);
+                document.getElementById('my-table-display').innerText = myTableId; 
+                enterApp('customer', `Table ${t}`); 
+            }
+        }
+        function enterApp(role, name) {
+            currentRole = role;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-interface').classList.remove('hidden');
+            document.getElementById('portal-title').innerText = role.toUpperCase();
+            ['customer','admin','staff','kitchen'].forEach(v => document.getElementById(`view-${v}`).classList.add('hidden'));
+            document.getElementById(`view-${role}`).classList.remove('hidden');
+            refreshUI();
+        }
+
+        /* RENDER */
+        function refreshUI() {
+            if(!appData.menu) return;
+
+            // CUSTOMER
+            if(currentRole === 'customer') {
+                const myBill = appData.tableBills ? (appData.tableBills[myTableId] || 0) : 0;
+                document.getElementById('bill-total').innerText = `$${parseFloat(myBill).toFixed(2)}`;
+
+                const grid = document.getElementById('menu-grid');
+                if(grid.innerHTML === '') {
+                    const cats = [...new Set(appData.menu.map(i => i.category))];
+                    grid.innerHTML = cats.map(cat => `
+                        <div class="category-header">${cat}</div>
+                        ${appData.menu.filter(i => i.category === cat).map(i => `
+                            <div class="menu-card">
+                                <div style="font-size:2rem">${i.icon}</div>
+                                <strong>${i.name}</strong>
+                                <div style="color:#64748b; font-size:0.8rem">${i.description || ''}</div>
+                                <div style="font-weight:bold; margin-top:auto">$${parseFloat(i.price).toFixed(2)}</div>
+                                <button class="add-btn" onclick="addToCart(${i.id})">Add</button>
+                            </div>
+                        `).join('')}
+                    `).join('');
+                }
+            }
+
+            // STAFF
+            if(currentRole === 'staff') {
+                if (appData.tables) {
+                    document.getElementById('floor-grid').innerHTML = appData.tables.map(t => `
+                        <div class="table-node ${t.status}" onclick="handleTableClick(${t.id}, '${t.status}')">
+                            <div style="font-size:1.5rem; font-weight:800">${t.label}</div>
+                            <div style="text-transform:uppercase; font-size:0.8rem; font-weight:600; margin-top:5px">${t.status}</div>
+                        </div>
+                    `).join('');
+                }
+                const pickupContainer = document.getElementById('pickup-grid');
+                const readyOrders = appData.orders.filter(o => o.status === 'Ready');
+                pickupContainer.innerHTML = readyOrders.length ? readyOrders.map(o => `
+                    <div class="ticket" style="border-top:4px solid #10b981">
+                        <div style="padding:10px; border-bottom:1px solid #eee">Order #${o.id} (T${o.table})</div>
+                        <ul style="padding-left:20px">${o.items.map(i=>`<li>${i.name}</li>`).join('')}</ul>
+                        <button class="btn-action" style="background:#10b981; color:white" onclick="updateStatus('${o.id}','Completed')">DELIVERED</button>
+                    </div>
+                `).join('') : '<p style="color:#999">No orders ready.</p>';
+            }
+
+            // KITCHEN
+            if(currentRole === 'kitchen') {
+                const active = appData.orders.filter(o => o.status === 'Pending' || o.status === 'In Progress');
+                document.getElementById('kds-container').innerHTML = active.map(o => `
+                    <div class="ticket" style="border-top:4px solid ${o.status==='Pending'?'#f59e0b':'#2563eb'}">
+                        <div style="padding:10px; border-bottom:1px solid #eee">#${o.id} (T${o.table})</div>
+                        <ul style="padding-left:20px">${o.items.map(i=>`<li>${i.name}</li>`).join('')}</ul>
+                        <button class="btn-action" style="background:${o.status==='Pending'?'#f59e0b':'#2563eb'}; color:white" onclick="updateStatus('${o.id}','${o.status==='Pending'?'In Progress':'Ready'}')">
+                            ${o.status === 'Pending' ? 'START COOKING' : 'MARK READY'}
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // ADMIN
+            if(currentRole === 'admin') {
+                document.getElementById('kpi-revenue').innerText = `$${parseFloat(appData.revenue).toFixed(2)}`;
+                document.getElementById('kpi-orders').innerText = appData.totalOrders;
+                
+                // Inventory
+                document.querySelector('#inv-table tbody').innerHTML = appData.inventory.map(i => `
+                    <tr>
+                        <td>${i.name}</td>
+                        <td style="font-weight:bold">${parseFloat(i.quantity_on_hand).toFixed(2)} ${i.unit}</td>
+                        <td>
+                            <input type="number" id="restock-${i.id}" class="restock-input">
+                            <button onclick="restockItem(${i.id})" style="background:#2563eb; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer">Add</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Menu Management
+                document.querySelector('#menu-mgmt-table tbody').innerHTML = appData.menu.map(i => `
+                    <tr>
+                        <td>${i.icon} ${i.name}</td>
+                        <td>$${parseFloat(i.price).toFixed(2)}</td>
+                        <td>${i.category}</td>
+                        <td><button onclick="deleteMenuItem(${i.id})" style="background:#ef4444; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer">Delete</button></td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        /* LOGIC */
+        function addToCart(id) {
+            const item = appData.menu.find(i => i.id === id);
+            cart.push(item);
+            document.getElementById('cart-total').innerText = `$${cart.reduce((s,i)=>s+parseFloat(i.price),0).toFixed(2)}`;
+            document.getElementById('cart-count').innerText = cart.length;
+        }
+
+        function submitOrder() {
+            if(cart.length === 0) return alert("Cart empty");
+            const total = cart.reduce((s,i)=>s+parseFloat(i.price),0);
+            socket.emit('place_order', { table: myTableId, items: cart, total });
+            cart = [];
+            document.getElementById('cart-total').innerText = '$0.00';
+            document.getElementById('cart-count').innerText = '0';
+            alert("Order sent!");
+        }
+
+        function openPayment() {
+            const myBill = appData.tableBills ? (appData.tableBills[myTableId] || 0) : 0;
+            if(myBill <= 0) return alert("No unpaid bill.");
+            document.getElementById('payment-modal').classList.remove('hidden');
+            document.getElementById('pay-table-num').innerText = myTableId;
+            document.getElementById('pay-amount').innerText = `$${parseFloat(myBill).toFixed(2)}`;
+            document.getElementById('pay-step-1').classList.remove('hidden');
+            document.getElementById('pay-step-2').classList.add('hidden');
+            document.getElementById('pay-step-3').classList.add('hidden');
+        }
+
+        function processPayment() {
+            document.getElementById('pay-step-1').classList.add('hidden');
+            document.getElementById('pay-step-2').classList.remove('hidden');
+            setTimeout(() => {
+                socket.emit('pay_bill', myTableId); 
+                document.getElementById('pay-step-2').classList.add('hidden');
+                document.getElementById('pay-step-3').classList.remove('hidden');
+                setTimeout(() => { document.getElementById('payment-modal').classList.add('hidden'); }, 2000);
+            }, 1500);
+        }
+
+        function switchAdminTab(tab) {
+            document.getElementById('tab-dash').classList.remove('active');
+            document.getElementById('tab-menu').classList.remove('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById('admin-sub-dash').classList.add('hidden');
+            document.getElementById('admin-sub-menu').classList.add('hidden');
+            document.getElementById(`admin-sub-${tab}`).classList.remove('hidden');
+        }
+
+        function addMenuItem() {
+            const item = {
+                name: document.getElementById('new-name').value,
+                price: parseFloat(document.getElementById('new-price').value),
+                category: document.getElementById('new-cat').value,
+                icon: document.getElementById('new-icon').value || '🍽️',
+                desc: document.getElementById('new-desc').value,
+                allergens: document.getElementById('new-allergy').value || 'None'
+            };
+            if(item.name && item.price) {
+                socket.emit('add_menu_item', item);
+                alert("Item added!");
+                // Clear inputs
+                ['new-name','new-price','new-cat','new-icon','new-desc','new-allergy'].forEach(id => document.getElementById(id).value = '');
+            }
+        }
+
+        function deleteMenuItem(id) {
+            if(confirm("Delete this item?")) socket.emit('delete_menu_item', id);
+        }
+
+        function restockItem(id) {
+            const amount = parseFloat(document.getElementById(`restock-${id}`).value);
+            if(amount > 0) socket.emit('restock_item', { id, amount });
+        }
+
+        function handleTableClick(id, status) {
+            if(status === 'Cleaning') { if(confirm("Mark Available?")) socket.emit('reset_table', id); }
+            else if (status === 'Occupied') alert("Table Occupied.");
+        }
+
+        function updateStatus(id, status) { socket.emit('update_status', { id, status }); }
+        function closePayment() { document.getElementById('payment-modal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
